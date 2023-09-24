@@ -12,8 +12,7 @@ class MyApp:
         self.window = tk.Tk()
         self.window.geometry("600x600")  # Set the size of the window to 400x300
         self.window.resizable(False, False)  # Make the window non-resizable
-        self.window.title("Anotator")
-        
+        self.window.title("Image Annotator")
         self.folderPath = ""
         self.imagePath = []
         self.currentIndex = 0
@@ -25,23 +24,37 @@ class MyApp:
 
 
         self.classes = pd.DataFrame()
+        self.classes['Filename'] = []
         
     def nextImage(self):
         if self.currentIndex < len(self.imagePath):
             self.currentIndex += 1 
             self.updateImageDisplay()
-            
+            self.updateClassValueDisplay()
+
     def prevImage(self):
         if self.currentIndex > 0:
             self.currentIndex -= 1
             self.updateImageDisplay()
+            self.updateClassValueDisplay()
     
     def saveAnnotation(self):
         saveFilePath = fd.asksaveasfilename(defaultextension='.csv')
         if saveFilePath:
             self.classes.to_csv(saveFilePath, index=False)
         
-      
+    def updateClassValueDisplay(self):
+        idx = self.classSelector.current()
+        if idx < 0:
+            return
+
+        current_values = list(self.classSelector['values'])
+        strVal = current_values[idx]
+        valStr = str(self.classes.at[self.currentIndex, strVal])
+        self.classVal.configure(text=valStr)
+            
+    def updateCallback(self, event):
+        self.updateClassValueDisplay()
         
 
     def initMenuBar(self):
@@ -61,6 +74,7 @@ class MyApp:
 
         self.classSelector = ttk.Combobox(self.window)
         self.classSelector.place(x = 75, y= 510)
+        self.classSelector.bind('<<ComboboxSelected>>', self.updateCallback)
         self.classSelector.update()
 
         self.classVal = tk.Label(text='0')
@@ -111,14 +125,14 @@ class MyApp:
         idx = self.classSelector.current()
         current_values = list(self.classSelector['values'])
         str = current_values[idx]
-        print('Old values: ', self.classes[str])
+        
         if self.classes.at[self.currentIndex, str] == 0:
             self.classes.at[self.currentIndex, str] = 1
             self.classVal.configure(text='1')
         else:
             self.classVal.configure(text='0')
             self.classes.at[self.currentIndex, str] = 0
-        print('New values: ', self.classes[str])
+        
             
 
 
@@ -171,13 +185,16 @@ class MyApp:
         self.folderPath = fd.askdirectory()
         ext = ('.jpg', '.jpeg', '.png', '.gif', '.bmp')
         self.imagePath = []
-        
+        filenames = []
         if self.folderPath:
             for fileName in os.listdir(self.folderPath):
                 if fileName.lower().endswith(ext):
                     self.imagePath.append(os.path.join(self.folderPath, fileName))
+                    filenames.append(fileName)
 
+        self.classes['Filename'] = filenames
         self.updateImageDisplay()
+
                     
 
             
