@@ -25,18 +25,23 @@ class MyApp:
 
         self.classes = pd.DataFrame()
         self.classes['Filename'] = []
+        self.window.bind("<Key>", self.keyPress)
         
     def nextImage(self):
         if self.currentIndex < len(self.imagePath):
             self.currentIndex += 1 
             self.updateImageDisplay()
             self.updateClassValueDisplay()
+            self.idxLbl.configure(text=str(self.currentIndex)+"/"+str(len(self.imagePath) - 1))
+            self.fileNameLbl.configure(text=os.path.basename(self.imagePath[self.currentIndex]))
 
     def prevImage(self):
         if self.currentIndex > 0:
             self.currentIndex -= 1
             self.updateImageDisplay()
             self.updateClassValueDisplay()
+            self.idxLbl.configure(text=str(self.currentIndex)+"/"+str(len(self.imagePath) - 1))
+            self.fileNameLbl.configure(text=os.path.basename(self.imagePath[self.currentIndex]))
     
     def saveAnnotation(self):
         saveFilePath = fd.asksaveasfilename(defaultextension='.csv')
@@ -65,7 +70,21 @@ class MyApp:
         self.menuBar.add_command( label="NEXT", command=self.nextImage)
         self.menuBar.add_command( label="PREV", command=self.prevImage)
         self.menuBar.add_command(label = "SAVE CSV", command=self.saveAnnotation)
+        self.menuBar.add_command(label = "LOAD CSV", command=self.openCSV)
         self.window.config(menu=self.menuBar, bg="#8592a1")
+
+        
+
+
+
+    def keyPress(self, event):
+        
+        if event.char == 'e':
+            self.nextImage()
+        elif event.char == 'q':
+            self.prevImage()
+        elif event.char == ' ':
+            self.setValue()
 
     def initExtraWidget(self):
         self.label1 = tk.Label(text = 'CLASSES')
@@ -98,6 +117,21 @@ class MyApp:
         self.deleteButton = tk.Button(text='DELETE CLASS', command=self.deleteClass)
         self.deleteButton.place(x = self.className.winfo_x() - self.createButton.winfo_width() - 5, y=520 + self.className.winfo_height())
         self.deleteButton.update()
+
+
+        self.lbl = tk.Label(text = 'INDEX: ')
+        self.lbl.place(x = 20, y=540)
+        self.lbl.update()
+
+        self.idxLbl = tk.Label(text = '0')
+        self.idxLbl.place(x = self.lbl.winfo_x() + self.lbl.winfo_width() + 5, y=540)
+        self.idxLbl.update()
+
+        self.fileNameLbl = tk.Label(text = 'NO IMAGES LOADED')
+        self.fileNameLbl.place(x = 20, y=565)
+        self.fileNameLbl.update()
+
+
 
 
 
@@ -137,7 +171,16 @@ class MyApp:
 
 
 
-
+    def openCSV(self):
+        filePath = fd.askopenfilename()
+        if filePath:
+            read = pd.read_csv(filePath)
+            self.classes = read
+            classNames = [str(item) for item in self.classes.columns.values]
+            classNames.remove("Filename")
+            self.classSelector['values'] = classNames
+            self.updateClassValueDisplay()
+            
   
     def openFile(self):
         fileName = fd.askopenfilename()
@@ -194,6 +237,8 @@ class MyApp:
 
         self.classes['Filename'] = filenames
         self.updateImageDisplay()
+        self.idxLbl.configure(text="0/"+str(len(filenames) - 1))
+        self.fileNameLbl.configure(text=filenames[0])
 
                     
 
