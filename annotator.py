@@ -10,8 +10,8 @@ import os
 class MyApp:
     def __init__(self):
         self.window = tk.Tk()
-        self.window.geometry("600x600")  # Set the size of the window to 400x300
-        self.window.resizable(False, False)  # Make the window non-resizable
+        self.window.geometry("600x600")  
+        self.window.resizable(False, False) 
         self.window.title("Image Annotator")
         self.folderPath = ""
         self.imagePath = []
@@ -213,6 +213,8 @@ class MyApp:
                     counter += 1
 
     def updateImageDisplay(self):
+        if self.currentIndex < 0 or self.currentIndex >= len(self.imagePath):
+            return
         window_width = self.window.winfo_width()  
         window_height = self.window.winfo_height()
         fileName = self.imagePath[self.currentIndex]
@@ -243,12 +245,6 @@ class MyApp:
                     
 
             
-        
-                       
-                       
-
-
-
 
 
     def loop(self):
