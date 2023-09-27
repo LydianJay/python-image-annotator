@@ -6,11 +6,14 @@ from tkinter import filedialog as fd
 from PIL import Image, ImageTk
 import pandas as pd
 import os
+import shutil
+import updator as up
 
 
 
 class MyApp:
     def __init__(self):
+        self.appVer = "v1.4"
         self.window = tk.Tk()
         self.window.geometry("600x600")  
         self.window.resizable(False, False) 
@@ -33,9 +36,10 @@ class MyApp:
         self.window.bind("<F3>", self.keySetValue)
         self.window.bind("<Up>", self.keySelectUp)
         self.window.bind("<Down>", self.keySelectDown)
+        ms.showinfo("Version: " + self.appVer, "-NOTES: add is still experimental")
         
     def nextImage(self):
-        if self.currentIndex < len(self.imagePath):
+        if self.currentIndex < len(self.imagePath) - 1:
             self.currentIndex += 1 
             self.updateImageDisplay()
             self.updateClassValueDisplay()
@@ -75,9 +79,11 @@ class MyApp:
         self.menuBar.add_command(label="FOLDER RENAME", command=self.renameFilesInFolder)
         self.menuBar.add_command(label="NEXT", command=self.nextImage)
         self.menuBar.add_command(label="PREV", command=self.prevImage)
+        self.menuBar.add_command(label="ADD", command=self.addImage)
         self.menuBar.add_command(label="DEL", command=self.deleteImage)
         self.menuBar.add_command(label = "SAVE CSV", command=self.saveAnnotation)
         self.menuBar.add_command(label = "LOAD CSV", command=self.openCSV)
+        
         self.window.config(menu=self.menuBar, bg="#8592a1")
 
         
@@ -126,7 +132,31 @@ class MyApp:
             self.classSelector.current(idx)
             self.updateClassValueDisplay()
 
-   
+
+
+    def addImage(self):
+        dir = fd.askdirectory()
+        ext = ('.jpg', '.jpeg', '.png', '.gif', '.bmp')
+        if dir:
+            for fileName in os.listdir(dir):
+                if fileName.lower().endswith(ext):
+                    shutil.copy(os.path.join(dir, fileName), self.folderPath)
+                    self.imagePath.append(os.path.join(self.folderPath, fileName))
+                    temp = [0 for i in range(len(self.classes.columns.values) - 1)]
+                    temp.insert(0, fileName)
+                    self.classes = pd.concat([self.classes, pd.DataFrame([temp], columns=self.classes.columns.values)], ignore_index=True)
+                    
+                    
+
+            self.updateClassValueDisplay()
+            self.idxLbl.configure(text=str(self.currentIndex) + "/" + str(len(self.imagePath) - 1))
+            self.fileNameLbl.configure(text=os.path.basename(self.imagePath[self.currentIndex]))
+
+                    
+                    
+
+
+
 
 
     def initExtraWidget(self):
@@ -205,8 +235,8 @@ class MyApp:
         
         if idx != -1:
             current_values = list(self.classSelector['values'])
-            del current_values[idx]
             self.classes = self.classes.drop(current_values[idx], axis=1)
+            del current_values[idx]
             self.classSelector['values'] = tuple(current_values)
         
 
@@ -244,18 +274,17 @@ class MyApp:
             self.updateClassValueDisplay()
 
     def renameFilesInFolder(self):
-        self.folderPath = fd.askdirectory()
+        dir = fd.askdirectory()
         ext = ('.jpg', '.jpeg', '.png', '.gif', '.bmp')
         counter = 0
-        self.imagePath = []
         
-        if self.folderPath:
-            for fileName in os.listdir(self.folderPath):
+        if dir:
+            for fileName in os.listdir(dir):
                 if fileName.lower().endswith(ext):
-                    old_path = os.path.join(self.folderPath, fileName)
+                    old_path = os.path.join(dir, fileName)
                     base_name, file_extension = os.path.splitext(fileName)
                     new_name = f"{counter}{file_extension}"
-                    new_path = os.path.join(self.folderPath, new_name)
+                    new_path = os.path.join(dir, new_name)
                     os.rename(old_path, new_path)
                     self.imagePath.append(new_path)
                     counter += 1
