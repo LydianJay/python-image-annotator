@@ -1,5 +1,7 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk 
+from tkinter import messagebox as ms
+
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
 import pandas as pd
@@ -25,7 +27,12 @@ class MyApp:
 
         self.classes = pd.DataFrame()
         self.classes['Filename'] = []
-        self.window.bind("<Key>", self.keyPress)
+
+        self.window.bind("<F1>", self.keyF1Press)
+        self.window.bind("<F2>", self.keyF2Press)
+        self.window.bind("<F3>", self.keySetValue)
+        self.window.bind("<Up>", self.keySelectUp)
+        self.window.bind("<Down>", self.keySelectDown)
         
     def nextImage(self):
         if self.currentIndex < len(self.imagePath):
@@ -65,10 +72,10 @@ class MyApp:
     def initMenuBar(self):
         self.menuBar = tk.Menu(self.window, bg="#A0A0A0")
         self.menuBar.add_command(label="OPEN FOLDER", command=self.openFolder)
-        self.menuBar.add_command(label="OPEN FILE", command=self.openFile)
-        self.menuBar.add_command(label="CONTENT RENAME", command=self.renameFilesInFolder)
-        self.menuBar.add_command( label="NEXT", command=self.nextImage)
-        self.menuBar.add_command( label="PREV", command=self.prevImage)
+        self.menuBar.add_command(label="FOLDER RENAME", command=self.renameFilesInFolder)
+        self.menuBar.add_command(label="NEXT", command=self.nextImage)
+        self.menuBar.add_command(label="PREV", command=self.prevImage)
+        self.menuBar.add_command(label="DEL", command=self.deleteImage)
         self.menuBar.add_command(label = "SAVE CSV", command=self.saveAnnotation)
         self.menuBar.add_command(label = "LOAD CSV", command=self.openCSV)
         self.window.config(menu=self.menuBar, bg="#8592a1")
@@ -77,14 +84,50 @@ class MyApp:
 
 
 
-    def keyPress(self, event):
+    def keySetValue(self, event):
+        self.setValue()
+
+    def keyF1Press(self, event):
+        self.prevImage()
+
+    def keyF2Press(self, event):
+        self.nextImage()
+
+    
+    def deleteImage(self):
+        temp = self.imagePath[self.currentIndex]
+        os.remove(self.imagePath[self.currentIndex])
+        self.classes.drop(self.currentIndex, inplace=True, axis=0)
+        self.classes.reset_index(inplace= True, drop =True)
+        self.imagePath.remove(temp)
+        self.updateClassValueDisplay()
+        self.updateImageDisplay()
+        self.idxLbl.configure(text="0/"+str(len(self.imagePath) - 1))
+        self.fileNameLbl.configure(text=os.path.basename(self.imagePath[self.currentIndex]))
         
-        if event.char == 'e':
-            self.nextImage()
-        elif event.char == 'q':
-            self.prevImage()
-        elif event.char == ' ':
-            self.setValue()
+
+
+
+    def keySelectUp(self, event):
+        idx = self.classSelector.current()
+        
+
+        if idx > 0:
+            idx -= 1
+            self.classSelector.current(idx)
+            self.updateClassValueDisplay()
+
+    def keySelectDown(self, event):
+        idx = self.classSelector.current()
+        sz = len(self.classSelector['values'])
+
+        if idx < sz - 1:
+            idx += 1
+            self.classSelector.current(idx)
+            self.updateClassValueDisplay()
+
+   
+
 
     def initExtraWidget(self):
         self.label1 = tk.Label(text = 'CLASSES')
@@ -131,6 +174,20 @@ class MyApp:
         self.fileNameLbl.place(x = 20, y=565)
         self.fileNameLbl.update()
 
+        self.goText = tk.Text(self.window, width=4, height=1)
+        self.goText.place(x = self.idxLbl.winfo_x() + self.idxLbl.winfo_width() + 150, y=540)
+        self.goText.update()
+
+        self.goButton = tk.Button(text="GO", command=self.goTo)
+        self.goButton.place(x = self.goText.winfo_x() + self.goText.winfo_width() +5, y=540)
+        self.goButton.update()
+
+    def goTo(self):
+        self.currentIndex = int(self.goText.get("1.0", "end-1c"))
+        self.updateClassValueDisplay()
+        self.updateImageDisplay()
+        self.idxLbl.configure(text= str(self.currentIndex) + "/"+ str(len(self.imagePath) - 1))
+        self.fileNameLbl.configure(text=os.path.basename(self.imagePath[self.currentIndex]))
 
 
 
@@ -153,8 +210,6 @@ class MyApp:
             self.classSelector['values'] = tuple(current_values)
         
 
-
-
     def setValue(self):
         idx = self.classSelector.current()
         current_values = list(self.classSelector['values'])
@@ -166,34 +221,27 @@ class MyApp:
         else:
             self.classVal.configure(text='0')
             self.classes.at[self.currentIndex, str] = 0
-        
-            
-
 
 
     def openCSV(self):
+        if len(self.imagePath) <= 0:
+            ms.showerror("ERROR", "No images loaded!")
+            return
+
         filePath = fd.askopenfilename()
         if filePath:
             read = pd.read_csv(filePath)
+
+            if len(read) != len(self.imagePath):
+                ms.showerror("ERROR", "Images count does not match with csv content count!")
+                return
+           
+
             self.classes = read
             classNames = [str(item) for item in self.classes.columns.values]
             classNames.remove("Filename")
             self.classSelector['values'] = classNames
             self.updateClassValueDisplay()
-            
-  
-    def openFile(self):
-        fileName = fd.askopenfilename()
-        window_width = self.window.winfo_width()  
-        window_height = self.window.winfo_height()  
-      
-        if fileName:
-            image = Image.open(fileName)
-            image = image.resize((window_width,window_height - 100))
-            self.tkImage = ImageTk.PhotoImage(image)
-            self.imageLabel.config(image=self.tkImage, text='')
-            self.imageLabel.pack(fill=tk.BOTH)
-            
 
     def renameFilesInFolder(self):
         self.folderPath = fd.askdirectory()
@@ -236,6 +284,11 @@ class MyApp:
                 if fileName.lower().endswith(ext):
                     self.imagePath.append(os.path.join(self.folderPath, fileName))
                     filenames.append(fileName)
+        
+
+        if len(filenames) <= 0:
+            ms.showinfo("INFO", "Folder does not contain images!")
+            return
 
         self.classes['Filename'] = filenames
         self.updateImageDisplay()
