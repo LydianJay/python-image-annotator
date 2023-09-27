@@ -13,7 +13,11 @@ import updator as up
 
 class MyApp:
     def __init__(self):
-        self.appVer = "v1.4"
+        self.appVer = "1.4"
+        reqVer = up.isUpToDate()
+        if reqVer != "FAIL" and reqVer != self.appVer:
+            ms.showinfo("Update Available: " + reqVer, "https://github.com/LydianJay/python-image-annotator")
+
         self.window = tk.Tk()
         self.window.geometry("600x600")  
         self.window.resizable(False, False) 
@@ -36,7 +40,7 @@ class MyApp:
         self.window.bind("<F3>", self.keySetValue)
         self.window.bind("<Up>", self.keySelectUp)
         self.window.bind("<Down>", self.keySelectDown)
-        ms.showinfo("Version: " + self.appVer, "-NOTES: add is still experimental")
+        
         
     def nextImage(self):
         if self.currentIndex < len(self.imagePath) - 1:
