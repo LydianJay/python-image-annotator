@@ -14,9 +14,9 @@ import updator as up
 class MyApp:
     def __init__(self):
         self.appVer = "1.4"
-        reqVer = up.getVersion()
-        if reqVer != "FAIL" and reqVer != self.appVer:
-            ms.showinfo("Update Available: " + reqVer, "https://github.com/LydianJay/python-image-annotator")
+        #reqVer = up.getVersion()
+        #if reqVer != "FAIL" and reqVer != self.appVer:
+        #    ms.showinfo("Update Available: " + reqVer, "https://github.com/LydianJay/python-image-annotator")
 
         self.window = tk.Tk()
         self.window.geometry("600x600")  
