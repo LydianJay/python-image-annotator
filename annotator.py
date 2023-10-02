@@ -13,8 +13,8 @@ import updator as up
 
 class MyApp:
     def __init__(self):
-        self.appVer = "1.4"
-        reqVer = up.isUpToDate()
+        self.appVer = "1.5"
+        reqVer = up.getVersion()
         if reqVer != "FAIL" and reqVer != self.appVer:
             ms.showinfo("Update Available: " + reqVer, "https://github.com/LydianJay/python-image-annotator")
 
@@ -80,7 +80,6 @@ class MyApp:
     def initMenuBar(self):
         self.menuBar = tk.Menu(self.window, bg="#A0A0A0")
         self.menuBar.add_command(label="OPEN FOLDER", command=self.openFolder)
-        self.menuBar.add_command(label="FOLDER RENAME", command=self.renameFilesInFolder)
         self.menuBar.add_command(label="NEXT", command=self.nextImage)
         self.menuBar.add_command(label="PREV", command=self.prevImage)
         self.menuBar.add_command(label="ADD", command=self.addImage)
@@ -216,6 +215,19 @@ class MyApp:
         self.goButton.place(x = self.goText.winfo_x() + self.goText.winfo_width() +5, y=540)
         self.goButton.update()
 
+        self.lblRename = tk.Label(text="PREFIX: ")
+        self.lblRename.place(x = self.goText.winfo_x() + self.goText.winfo_width() - 50, y=570)
+        self.lblRename.update()
+
+        self.prefixText = tk.Text(self.window, width=12, height=1)
+        self.prefixText.place(x = self.lblRename.winfo_x() + self.lblRename.winfo_width() + 5, y=570)
+        self.prefixText.update()
+
+
+        self.prefixBtn = tk.Button(text="RENAME", command=self.renameFilesInFolder)
+        self.prefixBtn.place(x = self.prefixText.winfo_x() + self.prefixText.winfo_width() +5, y=570)
+        self.prefixBtn.update()
+
     def goTo(self):
         self.currentIndex = int(self.goText.get("1.0", "end-1c"))
         self.updateClassValueDisplay()
@@ -276,18 +288,19 @@ class MyApp:
             classNames.remove("Filename")
             self.classSelector['values'] = classNames
             self.updateClassValueDisplay()
+            self.imagePath = read["Filename"].values.tolist()
 
     def renameFilesInFolder(self):
         dir = fd.askdirectory()
         ext = ('.jpg', '.jpeg', '.png', '.gif', '.bmp')
         counter = 0
-        
+        prefix = self.prefixText.get("1.0", "end-1c")
         if dir:
             for fileName in os.listdir(dir):
                 if fileName.lower().endswith(ext):
                     old_path = os.path.join(dir, fileName)
                     base_name, file_extension = os.path.splitext(fileName)
-                    new_name = f"{counter}{file_extension}"
+                    new_name = f"{prefix+str(counter)}{file_extension}"
                     new_path = os.path.join(dir, new_name)
                     os.rename(old_path, new_path)
                     self.imagePath.append(new_path)
@@ -301,7 +314,7 @@ class MyApp:
         fileName = self.imagePath[self.currentIndex]
 
         if fileName:
-            image = Image.open(fileName)
+            image = Image.open(os.path.join(self.folderPath,fileName))
             image = image.resize((window_width,window_height - 100))
             self.tkImage = ImageTk.PhotoImage(image)
             self.imageLabel.config(image=self.tkImage, text='')
